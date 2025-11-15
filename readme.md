@@ -221,7 +221,8 @@ x-user-id: <SEED_USER_ID>
 curl -H "x-user-id: <SEED_USER_ID>" \
   "https://deploy-check-us4b.onrender.com/my-list?limit=10"
 ```
-
+working curl : curl --location 'https://deploy-check-us4b.onrender.com/my-list?limit=10' \
+--header 'x-user-id: 6917faa9e291ae31a185ae21'
 ### 2. Add Item to MyList
 
 **POST** `/my-list`
