@@ -1,39 +1,33 @@
-# Build My List – Scalable MyList Feature (Node.js + TypeScript + MongoDB + Redis)
+# MyList Feature - Netflix-style Implementation
 
 This project implements a scalable "My List" feature similar to Netflix, with high-performance paginated reads using Redis caching, version-based cache invalidation, optimistic updates, and stampede protection.
 
 The solution is fully production-ready and includes automated tests, CI/CD pipeline, and sample data seeding.
 
----
-
 ## 🚀 Features
 
 ### Core Requirements Implemented
 
-- Add item to MyList
-- Remove item from MyList
-- Paginated "List My Items" endpoint
-- Cursor-based pagination
-- Ordering by `createdAt DESC`
-- Idempotent writes
-- Handles concurrent mutations safely
-- Cache invalidation on updates
-- Redis-based page caching (per user, per-page)
-- Versioning strategy to avoid stale pages
-- Cold-cache rebuild locking (stampede protection)
-
----
+- ✅ Add item to MyList
+- ✅ Remove item from MyList
+- ✅ Paginated "List My Items"
+- ✅ Cursor-based pagination
+- ✅ Sorted by createdAt DESC
+- ✅ Idempotent writes
+- ✅ Concurrency-safe (parallel adds)
+- ✅ Redis-backed high-performance pagination
+- ✅ Cache invalidation via version bumps
+- ✅ Stampede protection for cold cache rebuilds
+- ✅ Optimistic updates to first page cache
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Node.js (TypeScript), Express
-- **Database:** MongoDB (Mongoose)
-- **Cache:** Upstash Redis
-- **Testing:** Jest + Supertest, mongodb-memory-server
-- **Deployment:** Render.com
-- **CI/CD:** GitHub Actions
-
----
+- **Backend**: Node.js (TypeScript), Express
+- **Database**: MongoDB (Mongoose)
+- **Cache**: Upstash Redis
+- **Testing**: Jest + Supertest + mongodb-memory-server
+- **Deployment**: Render.com
+- **CI/CD**: GitHub Actions
 
 ## 📦 Project Structure
 
@@ -53,14 +47,12 @@ README.md
 package.json
 ```
 
----
-
 ## ⚙️ Project Setup
 
 ### 1. Clone Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/avinashbansal95/mylist-assignment.git
 cd <project-directory>
 ```
 
@@ -82,165 +74,171 @@ UPSTASH_REDIS_REST_TOKEN=your-upstash-redis-token
 REDIS_CACHE_TTL_SECONDS=30
 ```
 
-### 4. Run Development Server
+### 4. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-The server will start at `http://localhost:4000`
+Server runs at `http://localhost:4000`
 
-### 5. Run Tests
+## 🧪 Running Tests
 
 ```bash
 npm test
 ```
 
-Tests run using in-memory MongoDB + in-memory Redis mock. **No external systems required.**
+**Test coverage includes:**
 
-**Test Coverage Includes:**
-- Add/Remove items
-- Paginated fetch
-- Cache hit/miss behavior
+- Add item
+- Remove item
+- Paginated listing
 - Version bump logic
-- Optimistic updates
-- Concurrency (parallel adds)
-- Stampede protection (parallel GETs)
+- Optimistic page update
+- Cache hit/miss
+- Stampede protection
+- Concurrency (parallel writes)
 - Validation failures
 
----
+**Tests run on:**
+
+- In-memory MongoDB
+- In-memory Redis mock
+- No external systems required
 
 ## 🌱 Seeding Sample Data
 
-Before testing the API, seed the database with sample data:
+Run:
 
 ```bash
 npm run seed
 ```
 
-**This creates:**
+**Creates:**
+
 - 1 demo user
-- Multiple demo movies
-- Multiple demo TV shows
-- Pre-populated MyList items
+- Multiple movies
+- Multiple TV shows
+- Initial MyList items
 
-**Important:** Save the `userId` printed in the console - you'll need it for API requests.
-
----
+**Save the printed `userId`** — required for making MyList API requests.
 
 ## 🔥 API Endpoints
 
-**Base URL (Production):** `https://deploy-check-us4b.onrender.com/`
+- **Base URL (Production)**: `https://deploy-check-us4b.onrender.com/`
+- **Base URL (Local)**: `http://localhost:4000/`
 
-**Base URL (Local):** `http://localhost:4000/`
+All MyList endpoints require:
 
-All endpoints require the `x-user-id` header with a valid user ID (use the seeded user ID).
+```
+x-user-id: <SEED_USER_ID>
+```
+
+## ✅ Demo Content Creation Endpoints (For Testing Only)
+
+> **Note:** These endpoints were created ONLY for assignment testing. They intentionally contain simplified schemas and do not include all fields from the assignment's detailed schema (genres, episodes, preferences, etc.). The MyList feature only requires id, title, and content type, so minimal versions are implemented.
+
+### ➤ 1. Create User
+
+**POST** `/api/users`
+
+**Body:**
+
+```json
+{
+  "username": "john"
+}
+```
+
+**Example curl:**
+
+```bash
+curl -X POST http://localhost:4000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"username":"john"}'
+```
+
+### ➤ 2. Create Movie
+
+**POST** `/api/movies`
+
+**Body:**
+
+```json
+{
+  "title": "Inception"
+}
+```
+
+**Example curl:**
+
+```bash
+curl -X POST http://localhost:4000/api/movies \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Inception"}'
+```
+
+### ➤ 3. Create TV Show
+
+**POST** `/api/tvshows`
+
+**Body:**
+
+```json
+{
+  "title": "Breaking Bad"
+}
+```
+
+**Example curl:**
+
+```bash
+curl -X POST http://localhost:4000/api/tvshows \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Breaking Bad"}'
+```
+
+## 📘 MyList Feature Endpoints
 
 ### 1. List My Items (Paginated)
-
-#### First Page Request
 
 **GET** `/my-list`
 
 **Query Parameters:**
-- `limit` (optional, default: 10) - Number of items per page
+
+- `limit` — optional, default 10
+- `cursor` — only for next pages
 
 **Headers:**
+
 ```
 x-user-id: <SEED_USER_ID>
 ```
 
-**Example:**
+**First Page Example:**
 
 ```bash
-# Fetch first page (no cursor needed)
 curl -H "x-user-id: <SEED_USER_ID>" \
   "https://deploy-check-us4b.onrender.com/my-list?limit=10"
 ```
-
-**Response:**
-```json
-{
-  "items": [
-    {
-      "contentId": "movie123",
-      "contentType": "movie",
-      "title": "Inception",
-      "createdAt": "2024-01-15T10:30:00Z"
-    }
-  ],
-  "nextCursor": "eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiIsIl9pZCI6IjY1YTVhYmMxMjM0NTY3ODkwIn0=",
-  "hasMore": true
-}
-```
-
-#### Subsequent Page Requests (2nd page onwards)
-
-**GET** `/my-list?cursor={nextCursor}`
-
-**Query Parameters:**
-- `limit` (optional, default: 10) - Number of items per page
-- `cursor` (**required** for pages after the first) - Pagination cursor from previous response's `nextCursor`
-
-**Headers:**
-```
-x-user-id: <SEED_USER_ID>
-```
-
-**Example:**
-
-```bash
-# Fetch next page (cursor is REQUIRED)
-curl -H "x-user-id: <SEED_USER_ID>" \
-  "https://deploy-check-us4b.onrender.com/my-list?limit=10&cursor=eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiIsIl9pZCI6IjY1YTVhYmMxMjM0NTY3ODkwIn0="
-```
-
-**Response:**
-```json
-{
-  "items": [...],
-  "nextCursor": "next-page-cursor-or-null",
-  "hasMore": false
-}
-```
-
-**Important Notes:**
-- For the **first page**: Do NOT include the `cursor` parameter
-- For **all subsequent pages**: The `cursor` parameter is **MANDATORY** - use the `nextCursor` value from the previous response
-- When `hasMore` is `false` or `nextCursor` is `null`, you've reached the last page
 
 ### 2. Add Item to MyList
 
 **POST** `/my-list`
 
 **Headers:**
+
 ```
 x-user-id: <userId>
 Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
-  "contentId": "xxxxx",
+  "contentId": "xxxx",
   "contentType": "movie"
-}
-```
-
-**Example:**
-
-```bash
-curl -X POST https://deploy-check-us4b.onrender.com/my-list \
-  -H "x-user-id: <SEED_USER_ID>" \
-  -H "Content-Type: application/json" \
-  -d '{"contentId": "movie123", "contentType": "movie"}'
-```
-
-**Response:**
-```json
-{
-  "message": "Item added to MyList",
-  "item": {...}
 }
 ```
 
@@ -249,189 +247,87 @@ curl -X POST https://deploy-check-us4b.onrender.com/my-list \
 **DELETE** `/my-list/:contentId`
 
 **Headers:**
+
 ```
 x-user-id: <userId>
 ```
-
-**Example:**
-
-```bash
-curl -X DELETE https://deploy-check-us4b.onrender.com/my-list/movie123 \
-  -H "x-user-id: <SEED_USER_ID>"
-```
-
-**Response:**
-```json
-{
-  "message": "Item removed from MyList"
-}
-```
-
----
 
 ## 🧠 High-Level Design
 
 ### Cache Key Structure
 
-**Version key:**
 ```
 mylist:{userId}:version
-```
-
-**Page key:**
-```
 mylist:{userId}:page:{cursorKey}:v{version}
-```
-
-**Lock key:**
-```
 mylist:lock:{userId}:{cursorKey}
 ```
 
 ### Why Versioning?
 
-Without versioning, modifying page 1 affects every subsequent page (shift problem).
+Prevents page-shifting problems on add/remove by invalidating all pages O(1).
 
-**Version bump ensures:**
-- After add/remove → all old page keys become invalid
-- Next GET rebuilds fresh pages
-- No complex page-shifting logic
-- Redis invalidation becomes O(1)
+### Optimistic Updates
 
-### Optimistic Page Update
-
-**After add:**
-- **Fast path:** If page 1 cache exists → prepend new item + pop last
-- **Slow path:** If not → full rebuild
+If page 1 is cached: prepend new item → pop last → update cache without full rebuild.
 
 ### Stampede Protection
 
-Cold page load uses:
+Uses a short-lived Redis lock:
+
 ```
 SET lockKey NX EX 3
 ```
 
-Only one request builds the page; others wait for cache.
+Only one rebuild happens for cold cache.
 
----
+## 🧠 Additional Design Decisions
 
-## 🧠 Design Decisions
+### Pre-prepared Redis pages
 
-### 1. Pre-prepared Data in Redis for Minimal Latency
+Pages are stored as fully-serialized JSON → no recomputation → <1ms response time.
 
-**Design Choice:** We store pre-prepared, paginated results in Redis for each user's MyList.
-
-**How It Works:**
-
-Instead of querying MongoDB every time a user requests their list, we:
-1. **Prepare the data once:** Fetch and format the paginated results from MongoDB
-2. **Store in Redis:** Cache the complete page result with all formatted data
-3. **Serve instantly:** Subsequent requests fetch directly from Redis (sub-millisecond response)
-
-**Why This Approach?**
-
-**Performance Benefits:**
-- **No repeated computation:** Data is formatted once and reused
-- **Instant retrieval:** Redis fetch takes <1ms vs MongoDB query taking 8-20ms
-- **Reduced database load:** MongoDB is only hit on cache misses or invalidations
-- **Pre-serialized responses:** JSON responses are already prepared and ready to send
-
-**Example Flow:**
-
-```
-First Request (Cache Miss):
-User → API → Check Redis → Miss → Query MongoDB → Format data → Store in Redis → Return to user
-Time: ~20ms
-
-Subsequent Requests (Cache Hit):
-User → API → Check Redis → Hit → Return cached data
-Time: <1ms
-```
-
-**Cache Key Structure:**
-```
-mylist:{userId}:page:{cursorKey}:v{version}
-```
-
-Each page is stored as a complete, ready-to-serve JSON response, eliminating the need to:
-- Query the database again
-- Join with content data
-- Format the response
-- Sort the results
-
-This design ensures that 95%+ of requests are served from pre-prepared cache, achieving sub-10ms response times even under high load.
-
-### 2. Why Versioning Instead of Cache Key Deletion?
-
-- Deleting 10 cache pages = O(n)
-- Incrementing version = O(1)
-- Supports cursor-based pagination flawlessly
-
-### 3. Why Lock-Based Stampede Prevention?
-
-Parallel cold-cache reads could cause:
-- Multiple DB queries
-- Race conditions
-- Wasted CPU
-
-Lock ensures only one rebuild.
-
-### 4. Why mongodb-memory-server for Tests?
+### mongodb-memory-server for testing
 
 - Deterministic
-- No need for real MongoDB instance
-- Perfect for integration tests
-
----
+- No external DB required
+- Perfect for CI/CD pipelines
 
 ## 🚀 Deployment
 
-The application is deployed on **Render.com**.
+Deployed on **Render.com**
 
-**Configuration:**
-- **Build command:** `npm install && npm run build`
-- **Start command:** `npm start`
-- Environment variables configured via Render dashboard
+**Live URL:** `https://deploy-check-us4b.onrender.com/`
 
-**Live URL:** https://deploy-check-us4b.onrender.com/
+## 🔄 CI/CD (GitHub Actions)
 
----
+**Pipeline Includes:**
 
-## 🔄 CI/CD Pipeline
+1. Install dependencies
+2. Run full test suite
+3. If tests pass → trigger Render Deploy Hook
 
-**GitHub Actions Workflow:** `.github/workflows/deploy-to-render.yml`
-
-**Pipeline Steps:**
-1. Run automated tests
-2. If tests pass → trigger Render deploy hook
-3. Prevents bad builds from deploying
-
----
+**Located at:** `.github/workflows/deploy-to-render.yml`
 
 ## 📝 Assumptions
 
-- Authentication is out of scope; we use `x-user-id` header
-- Only movies/TV shows are supported as content types
-- Content must exist in database before adding to MyList
-- Each MyList item is unique per user per content (no duplicates)
-
----
+- Authentication is not part of assignment
+  - Using mock `x-user-id` instead of auth
+- Simplified Movie / TVShow / User schemas for testing
+  - Full schema from assignment can be supported if needed
 
 ## ⭐ Deliverable Checklist
 
 | Item | Status |
 |------|--------|
-| Codebase with models, routes, services | ✅ Done |
-| Redis caching + version bump logic | ✅ Done |
-| Pagination + cursor-based logic | ✅ Done |
-| Comprehensive integration tests | ✅ Done |
-| CI/CD pipeline | ✅ Done |
-| Complete README documentation | ✅ Done |
-| Seed data script | ✅ Done |
-| Production deployment | ✅ Done |
-
----
+| Models, routes, services | ✅ |
+| Redis caching + versioning | ✅ |
+| Pagination + cursor logic | ✅ |
+| Integration tests | ✅ |
+| CI/CD | ✅ |
+| Seed script | ✅ |
+| Demo content creation endpoints | ✅ |
+| Deployment | ✅ |
 
 ## 📞 Support
 
-For issues or questions, please open an issue in the GitHub repository.
+If you need help running or reviewing the project, please reach out. I will be happy to assist.
